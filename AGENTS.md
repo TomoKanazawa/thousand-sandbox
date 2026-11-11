@@ -70,10 +70,10 @@ Do not judge by whether a command exited without an error. Check the result:
 | Step | Evidence that it worked |
 |---|---|
 | Capture | The summary line shows more than a handful of exchanges, and `sandbox analyze` lists `read` endpoints. One state and zero actions from `--explore` means it was looking at a login page |
-| Copy running | `curl -s http://127.0.0.1:8878/health` returns `"ok": true`. It is `false` for the first few seconds; repeat until it is true before attaching |
+| Copy running | `curl -s http://127.0.0.1:8878/health` returns `"ok": true`. For the first few seconds it does not answer or says `false`; repeat until it is true before attaching |
 | Copy is really the copy | Stop or disconnect the real app if you can, then load a recorded page through the attached Chrome. Or check that the request appears in `GET /log` |
 | Agent run | `GET /log` has no entries with `served` equal to `uncaptured` or `external` for what the agent needed |
-| A write was kept | The row is in `GET /state`, and it is gone again after `sandbox reset` |
+| A write was kept | The row is in `GET /state`, and it is gone again after `sandbox reset` (the request log survives a reset) |
 | Stateful copy is right | `sandbox verify` exits 0 and prints `n/n checks pass` with n above zero |
 | Exploring changed nothing | Compare the real app's data before and after, if the app lets you read it |
 | Drift check | Exit code 0, 1, 2 or 3 as described in the guide |

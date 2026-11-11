@@ -293,8 +293,9 @@ const browser = await puppeteer.connect({ browserURL: "http://127.0.0.1:9333" })
 For other frameworks, look for an option named something like "connect to an existing browser" or "CDP URL" and
 give it `http://127.0.0.1:9333`.
 
-In the copy nobody needs to log in: the login request is answered with the recorded success whatever is typed,
-and pages behind the login are served directly.
+In the copy nobody needs to log in: pages behind the login are served directly, and the login request is
+answered with the recorded success whatever is typed. A replay copy may still open on the login page, because
+that is what the app's start address showed when it was recorded; go straight to the page you want.
 
 ### Use your own browser
 
@@ -312,12 +313,13 @@ browser accept the copy's certificate for HTTPS addresses; nothing is installed 
 | Request | What it does |
 |---|---|
 | `GET /health` | `{ "ok": true, "app": ..., "endpoints": ... }`. `ok` is `false` while the copy is still starting |
-| `POST /reset` | Puts the copy's data back to the start. Same as `sandbox reset` |
+| `POST /reset` | Puts the copy's data back to the start. Same as `sandbox reset`. The request log is kept |
 | `GET /state` | The copy's database as JSON, one key per table. Use it in test assertions |
-| `GET /log` | Every request the app's pages and your agent made, in order |
+| `GET /log` | Every request the app's pages and your agent made, in order, since `sandbox up`. The first few are the copy's Chrome opening the start page |
 | `GET /ledger` | The trust labels (section 8) |
 
-Each `/log` entry has `method`, `url`, `status` and `served`:
+Each `/log` entry has a number `n`, a time `at`, `method`, `url`, `status`, the endpoint id `cluster` when the
+request matched a known endpoint, and `served`:
 
 | `served` | Meaning |
 |---|---|
@@ -326,7 +328,7 @@ Each `/log` entry has `method`, `url`, `status` and `served`:
 | `generated` | A handler answered from the database |
 | `stub` | Login and similar: the recorded success |
 | `noise` | Analytics, answered with nothing. Also the browser's own request for `/favicon.ico` when the app has none |
-| `uncaptured` | Nothing recorded for this request. Status `501` |
+| `uncaptured` | Nothing recorded for this request. The endpoint may be known, but not with these parameters (this record, this search). Status `501` |
 | `external` | An address that is not in scope (section 4). Status `502` |
 
 After an agent run, filter the log for `uncaptured` and `external`. The first are the places where your agent
@@ -339,8 +341,9 @@ the log.
 - `--headless` runs Chrome without a window.
 - `--port`, `--control-port`, `--cdp-port` change the three ports (defaults 8877, 8878, 9333).
 - `--replay-only` ignores the handlers and answers only from recordings.
-- `--today` makes the copy's clock the real clock. By default the clock continues from the end of the last
-  capture, so dates in the copy stay consistent with the recorded data.
+- `--today` changes the clock the handlers use when they create dates (a new record's timestamp, for example).
+  By default that clock continues from the end of the last capture, so new dates stay consistent with the
+  recorded data; with `--today` it is the real time. The browser's own clock is never changed.
 
 ## 7. Make the copy keep state
 
@@ -404,7 +407,7 @@ sandbox verify
 ```
 
 ```
-20/20 checks pass. Endpoints: 7 verified, 7 replayed-only, 0 inferred, 0 uncaptured, 1 external
+95/95 checks pass. Endpoints: 7 verified, 7 replayed-only, 0 inferred, 0 uncaptured, 1 external
 ```
 
 `verify` replays every recorded session against the copy, in order, from the starting data, and compares each
@@ -417,7 +420,8 @@ FAIL c_0001 DELETE app.example.com /api/notes/{id} [l1] 20261111-201725:x74: sta
 ```
 
 That line reads: endpoint id, endpoint, level of the check (below), capture id and exchange id, then what was
-expected and what the copy answered. On a replay copy it has nothing to check and prints `0/0 checks pass`.
+expected and what the copy answered. On a replay copy it has nothing to check and prints `0/0 checks pass`; the only endpoints it then counts as
+verified are the static files, which are the same bytes every time.
 
 There are three levels of check:
 
@@ -431,7 +435,7 @@ and each endpoint gets one label:
 
 | Label | Meaning | Trust it for |
 |---|---|---|
-| verified | Passed L2 or L3 | Records and sequences beyond the ones recorded |
+| verified | Passed L2 or L3. Static files always count as verified | Records and sequences beyond the ones recorded |
 | replayed-only | Reproduces the recordings only | Exactly what was recorded |
 | inferred | A handler exists but a check fails | Nothing yet |
 | uncaptured | Never recorded | Nothing; it answers `501` |
@@ -552,7 +556,7 @@ To start an app again from nothing, delete `.sandbox/<app>/`. To remove one reco
 | `Capture <id> holds personal data and has not been reviewed` | `scrub --pii` was used | `sandbox scrub --review`, then `sandbox scrub --confirm` |
 | `ANTHROPIC_API_KEY is not set` | `sandbox build` has no key | Put it in `.env` in the folder you run from, or export it |
 | `The copy is not running` | `reset` or `down` without `up` | `sandbox up` |
-| An "address already in use" error from `sandbox up` | A copy is already running, or the port is taken | `sandbox down`, or choose other ports |
+| `listen EADDRINUSE: address already in use` from `sandbox up` | A copy is already running, or the port is taken | `sandbox down`, or choose other ports |
 | Chrome does not open | Chrome is not installed where the tool looks | Install Chrome, or `pnpm --filter thousand-sandbox exec playwright install chromium` |
 | Live updates do not arrive in the copy | WebSockets are recorded but not replayed | Nothing yet; see Limits |
 | `verify` fails with different ids or stale values, on a test system | The system's data was reset between captures | Record with `--after-reset` (section 5). To fix an existing capture, delete its folder under `captures/` and record again |
@@ -575,6 +579,8 @@ The full list is in [STATUS.md](STATUS.md). The ones you are most likely to meet
 - **Exploring does not fill in forms**, so writes are learned only from a person's or a script's session.
 - **Requests the app never made are not guessed.** An endpoint nobody recorded answers `501`.
 - **One copy at a time** per machine with the default ports.
+- **The proxy port is open on every network interface**, because of the library it uses. Requests from other
+  machines are refused with `403`; only this machine gets answers.
 - **Personal-data removal is partial** (section 10).
 - **The builder is restricted, not sealed.** It can only write inside the copy's folder and cannot read the
   held-back recordings, but it does not run in a container.

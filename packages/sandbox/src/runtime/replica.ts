@@ -194,7 +194,7 @@ export class Replica {
     this.db?.close();
     this.db = null;
     this.sessions.clear();
-    this.log.length = 0;
+    // The request log is kept: a reset between two agent runs must not erase the evidence of the first.
     this.startedAt = Date.now();
     for (const suffix of ["", "-wal", "-shm"]) rmSync(this.dbFile + suffix, { force: true });
     const seed = materializeSeed(this.paths);

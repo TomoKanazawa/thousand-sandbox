@@ -161,8 +161,8 @@ Press Ctrl-C to stop.
 The tool started a Chrome that sends every request for the app to the copy. The app's address has not changed.
 Leave out `--headless` to see the window.
 
-Starting takes a few seconds. The copy is ready when this shows `"ok": true`; a script should repeat it until
-it does:
+Starting takes a few seconds. The copy is ready when this shows `"ok": true`. Until then it either does not
+answer or shows `false`, so a script should repeat it until it shows `true`:
 
 ```bash
 curl -s http://127.0.0.1:8878/health
@@ -203,11 +203,22 @@ The first line is a real page of the app, served by the copy while the app is of
 the copy follows: **it never makes an answer up.** A request it has no recording for gets status `501` and the
 header `X-Sandbox: uncaptured`.
 
-See what your agent did:
+See what was asked of the copy:
 
 ```bash
 curl -s http://127.0.0.1:8878/log
 ```
+
+```
+[
+  { "n": 1, "at": "2026-11-11T20:32:02.114Z", "method": "GET", "url": "http://127.0.0.1:4010/", "status": 302, "served": "replay", "cluster": "c_0002" },
+  ...
+  { "n": 9, "at": "2026-11-11T20:32:09.870Z", "method": "GET", "url": "http://127.0.0.1:4010/patients/999", "status": 501, "served": "uncaptured", "cluster": "c_0007" }
+]
+```
+
+The first few entries are the copy's own Chrome opening the app's start page when it launched; the rest are
+your agent. `cluster` is the id of the endpoint the request belongs to.
 
 Each entry has the method, the URL, the status and `served`: `static`, `replay`, `generated`, `stub`, `noise`,
 `uncaptured`, or `external` (an address outside the app, refused with `502`). The entry for `/patients/999` is
@@ -221,17 +232,25 @@ $SB down
 Stopped.
 ```
 
-So far this is a **replay copy**: it repeats what was recorded. Writes are answered as they were recorded and
+So far this is a **replay copy**: it repeats what was recorded. If you open it in a visible window it starts on
+the login page, because that is what the app showed first when it was recorded; any name and password are
+accepted. Writes are answered as they were recorded and
 change nothing. Steps 8 and 9 make it keep state.
 
 ## 7. Let the tool explore by itself, safely
 
-Start the test app again (step 1) and leave it running for the rest of the tutorial. The restart did two things:
+Start the test app again (step 1; you stopped it in step 5) and leave it running for the rest of the tutorial. The restart did two things:
 it logged the tool out, and it put the app's data back to where it started. So run the session from step 3
 again, and tell the tool about the second point with `--after-reset`:
 
 ```bash
 $SB capture --script $REPO/fixtures/tiny-clinic/session.mjs --headless --after-reset
+```
+
+```
+Probe pass: 16 of 16 safe GETs repeated.
+Capture 20261111-203219 saved. 111 exchanges in 15 endpoints so far.
+Next: sandbox up (replay as recorded), or sandbox build (make it stateful).
 ```
 
 Without `--after-reset` the tool assumes each recording continues from where the last one ended, as it does on
@@ -305,7 +324,14 @@ how you check what an agent really did:
 curl -s http://127.0.0.1:8878/state
 ```
 
-The `note` table now has one more row. Put the copy back to its starting data:
+```
+{
+  "note": [ ..., { "id": 5, "patient": 103, "text": "Written by an agent in the copy.", "author": "dr.test" } ],
+  "patient": [ ... ]
+}
+```
+
+The `note` table has one more row than before. Put the copy back to its starting data:
 
 ```bash
 $SB reset

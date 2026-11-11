@@ -382,7 +382,9 @@ function has(bin: string) {
   }
 }
 
-program.parseAsync().catch((e: Error) => {
+program.parseAsync().catch((e: Error & { code?: string }) => {
+  if (e.code === "EADDRINUSE")
+    e.message = `${e.message}\n  A copy may already be running: stop it with \`sandbox down\`, or choose other ports with --port, --control-port and --cdp-port.`;
   process.stderr.write(`sandbox: ${e.message}\n`);
   process.exit(1);
 });
