@@ -88,7 +88,7 @@ export default defineConfig({
       {
         text: "Start",
         items: [
-          { text: "What it is", link: "/" },
+          { text: "Introduction", link: "/" },
           { text: "Tutorial: the whole tool in 15 minutes", link: "/tutorial" },
         ],
       },

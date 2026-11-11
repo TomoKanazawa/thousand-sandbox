@@ -1,25 +1,6 @@
----
-layout: home
-title: Thousand Sandbox
-hero:
-  name: Thousand Sandbox
-  text: An exact working copy of any web app.
-  tagline: A sandbox for testing AI agents. It records the app, runs a local copy at the app's own addresses, and tells you which actions in the copy are proven.
-  actions:
-    - theme: brand
-      text: Tutorial, 15 minutes
-      link: /tutorial
-    - theme: alt
-      text: Guide for your own app
-      link: /guide
-    - theme: alt
-      text: View on GitHub
-      link: https://github.com/TomoKanazawa/thousand-sandbox
----
+# Thousand Sandbox documentation
 
-<div class="vp-doc home-notes">
-
-## What it does
+Thousand Sandbox makes an exact working copy of a web app, as a sandbox for testing AI agents.
 
 You point it at a web app you can log in to. It records the app while it is used, then runs a local copy that
 serves the app's own pages and scripts at the app's own addresses. Your agent works in the copy: no client
@@ -37,18 +18,23 @@ key, and only when you run `sandbox build`.
 | Have an AI agent install, run or test it | [For AI agents](../AGENTS.md) |
 | Know what is finished and what is not | [Status](STATUS.md) |
 
+## Install
+
+You need Node 22.13 or newer, pnpm 9 or newer, and Google Chrome.
+
+```bash
+git clone https://github.com/TomoKanazawa/thousand-sandbox.git
+cd thousand-sandbox
+pnpm install
+pnpm build
+```
+
+The command is `bin/sandbox` in the clone. The [Tutorial](TUTORIAL.md) continues from here.
+
 ## Status
 
 Early. Everything in the tutorial works on the test app and passes its tests. It has not yet been run on a
 large real app. [Status](STATUS.md) lists what is built and what is missing.
 
-</div>
-
-<style>
-/* Lines up with the hero above it. */
-.home-notes { max-width: 1280px; margin: 0 auto; padding: 0 24px 64px; }
-@media (min-width: 640px) { .home-notes { padding: 0 48px 64px; } }
-@media (min-width: 960px) { .home-notes { padding: 0 64px 96px; } }
-.home-notes > * { max-width: 760px; }
-.home-notes table { display: table; }
-</style>
+The code is open source under Apache-2.0, at
+[github.com/TomoKanazawa/thousand-sandbox](https://github.com/TomoKanazawa/thousand-sandbox).

@@ -39,15 +39,12 @@
   --vp-sidebar-bg-color: #0b0a09;
   --vp-nav-bg-color: #0b0a09;
   --vp-local-search-bg: #141210;
-  --vp-home-hero-name-color: #ff6b1a;
 }
 
 h1,
 h2,
 h3,
-.VPNavBarTitle .title,
-.VPHero .name,
-.VPHero .text {
+.VPNavBarTitle .title {
   font-family: var(--ts-display);
   letter-spacing: -0.02em;
 }
@@ -90,10 +87,4 @@ h3,
 .VPNavBar,
 .VPSidebar {
   border-color: var(--vp-c-divider);
-}
-.VPHero .text {
-  max-width: 18ch;
-}
-.VPHero .tagline {
-  max-width: 52ch;
 }
