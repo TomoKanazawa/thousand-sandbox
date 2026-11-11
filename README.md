@@ -15,6 +15,9 @@ run on a large real app. See [docs/STATUS.md](docs/STATUS.md) for what is built 
 
 ## Documentation
 
+The documentation site is **[docs.usethousand.com](https://docs.usethousand.com)**. The same pages are in this
+repository:
+
 | Read | For |
 |---|---|
 | [docs/TUTORIAL.md](docs/TUTORIAL.md) | The whole tool in 15 minutes on a bundled test app. No account and no API key needed |
@@ -112,8 +115,10 @@ pnpm docs:dev        # preview at http://localhost:5173, reloads as you edit
 pnpm docs:build      # writes the site to docs/.vitepress/dist
 ```
 
-`AGENTS.md` stays at the repository root and is copied into the site on each build. To host the site anywhere
-that serves static files, use the build command `pnpm docs:build` and the output folder `docs/.vitepress/dist`.
+`AGENTS.md` stays at the repository root and is copied into the site on each build. The site is published at
+docs.usethousand.com with `pnpm docs:deploy` (maintainers only; it needs the project's Cloudflare login). To
+host a copy anywhere that serves static files, use the build command `pnpm docs:build` and the output folder
+`docs/.vitepress/dist`.
 
 ## Rules for this repo
 

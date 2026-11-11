@@ -13,7 +13,8 @@
     "sandbox": "node packages/sandbox/dist/cli.js",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "docs:deploy": "pnpm docs:build && npx --yes wrangler deploy -c docs/wrangler.jsonc"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
