@@ -13,16 +13,29 @@ and only when you run `sandbox build`.
 **Status: early.** Everything below works on the test app in this repo and passes its tests. It has not yet been
 run on a large real app. See [docs/STATUS.md](docs/STATUS.md) for what is built and what is not.
 
+## Documentation
+
+| Read | For |
+|---|---|
+| [docs/TUTORIAL.md](docs/TUTORIAL.md) | The whole tool in 15 minutes on a bundled test app. No account and no API key needed |
+| [docs/GUIDE.md](docs/GUIDE.md) | Using it on your own app: every command, the files, troubleshooting, limits |
+| [AGENTS.md](AGENTS.md) | For an AI agent asked to run or test the tool |
+| [docs/STATUS.md](docs/STATUS.md) | What is built, what has been run, what is missing |
+| [docs/CONTRACT.md](docs/CONTRACT.md), [docs/FORMATS.md](docs/FORMATS.md) | The handler contract and the file formats |
+
 ## Quick start
 
 ```bash
+git clone https://github.com/TomoKanazawa/thousand-sandbox.git && cd thousand-sandbox
 pnpm install && pnpm build
-alias sandbox="node $PWD/packages/sandbox/dist/cli.js"
+alias sandbox="$PWD/bin/sandbox"
 
 sandbox init https://app.example.com     # opens Chrome with its own profile; log in, close the window
 sandbox capture                          # use the app as usual, close the window when done
 sandbox up                               # the copy is running; a Chrome window opens on it
 ```
+
+No person at the keyboard? `sandbox init <url> --no-login`, then `sandbox capture --script session.mjs --headless`.
 
 `sandbox up` prints a DevTools address. Any agent framework that can attach to a running Chrome (Playwright,
 Browser Use, Stagehand, Puppeteer) uses the copy at the app's real URLs with no code change:
@@ -46,7 +59,7 @@ const browser = await chromium.connectOverCDP("http://127.0.0.1:9333");
 | Command | What it does |
 |---|---|
 | `sandbox init <url>` | Set up an app under `.sandbox/` and log in once |
-| `sandbox capture` | Record your own session. `--explore` crawls by itself with writes blocked |
+| `sandbox capture` | Record your own session. `--script <file>` runs a scripted one; `--explore` crawls by itself with writes blocked |
 | `sandbox policy` | Show or change which endpoints count as reads and which as writes |
 | `sandbox scrub` | Strip secrets; `--pii` also replaces personal data; `--review` shows the result |
 | `sandbox analyze` | Group requests into endpoints and classify them. No model |

@@ -2,12 +2,12 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statfsSync, writeFileSync } from "node:fs";
 import { totalmem } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { Command } from "commander";
 import { analyze } from "./analyze/index.js";
 import { build, estimateBuild } from "./builder/index.js";
-import { capture, launchBrowser, loadPolicy, savePolicy } from "./capture/index.js";
+import { type CaptureOptions, capture, launchBrowser, loadPolicy, savePolicy } from "./capture/index.js";
 import { SessionExpired, adoptDriftCapture, drift, scheduleDaily } from "./drift/index.js";
 import { initApp } from "./init.js";
 import { up } from "./runtime/server.js";
@@ -73,6 +73,10 @@ async function openForLogin(paths: ReturnType<typeof appPaths>, url: string) {
 withApp(program.command("capture").description("Record the live app"))
   .option("--human", "you use the app; everything is recorded (default)")
   .option("--explore", "automatic read-only crawl; writes are blocked")
+  .option(
+    "--script <file>",
+    "run this session instead of a person: a module whose default export is async (page) => {}",
+  )
   .option("--allow-writes", "with --explore: let writes through (only for apps you own that reset)")
   .option("--max-actions <n>", "with --explore: stop after this many actions", (v) => Number.parseInt(v, 10))
   .option("--headless", "no visible window (not for --human)")
@@ -80,8 +84,17 @@ withApp(program.command("capture").description("Record the live app"))
   .option("--label <text>", "a note stored with the capture")
   .action(async (o) => {
     const { paths, config } = ctx(o);
+    if (o.script && o.explore) throw new Error("Use --script or --explore, not both.");
+    let script: CaptureOptions["script"];
+    if (o.script) {
+      const mod = await import(pathToFileURL(resolve(String(o.script))).href);
+      if (typeof mod.default !== "function")
+        throw new Error(`${o.script} must have a default export: async (page, { context }) => { ... }`);
+      script = mod.default;
+    }
     const id = await capture(paths, config, {
-      mode: o.explore ? "explore" : "human",
+      mode: o.script ? "script" : o.explore ? "explore" : "human",
+      script,
       allowWrites: o.explore ? !!o.allowWrites : true,
       maxActions: o.maxActions,
       headless: !!o.headless,

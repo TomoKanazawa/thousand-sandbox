@@ -77,6 +77,21 @@ ${body}
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://x");
     const path = url.pathname;
+    // Test switches, for whoever is trying the sandbox tool. They are not part of the "app" and need no login.
+    //   GET  /__test/state        the real app's data, to prove a crawl changed nothing
+    //   POST /__test/reset        put the data back
+    //   POST /__test/variant/v2   release a changed version (renamed button, changed API); /v1 goes back
+    if (path.startsWith("/__test/")) {
+      const m = /^\/__test\/variant\/(v1|v2)$/.exec(path);
+      if (m && req.method === "POST") variant = m[1];
+      else if (path === "/__test/reset" && req.method === "POST") db = SEED();
+      else if (path !== "/__test/state") {
+        res.writeHead(404).end();
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ variant, ...db }));
+      return;
+    }
     const send = (status, body, headers = {}) => {
       res.writeHead(status, { "cache-control": "no-store", ...headers });
       res.end(body);

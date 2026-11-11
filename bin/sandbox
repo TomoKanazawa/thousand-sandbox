@@ -1,0 +1,10 @@
+#!/bin/sh
+# Runs the sandbox command from a clone of this repository, from any folder:
+#   /path/to/thousand-sandbox/bin/sandbox doctor
+# The tool keeps its files in ./.sandbox of the folder you run it from.
+DIR="$(cd "$(dirname "$0")/.." && pwd)"
+if [ ! -f "$DIR/packages/sandbox/dist/cli.js" ]; then
+  echo "sandbox: not built yet. Run: (cd $DIR && pnpm install && pnpm build)" >&2
+  exit 1
+fi
+exec node "$DIR/packages/sandbox/dist/cli.js" "$@"

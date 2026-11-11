@@ -7,7 +7,7 @@ Version 0.1.0. 19 automated tests pass on the test app `fixtures/tiny-clinic`. O
 
 | Stage | What works |
 |---|---|
-| Capture | Chrome with its own profile; every HTTP exchange with bodies; WebSocket frames; clicks, typing, submits; page snapshots (HTML + accessibility tree); HAR as a second copy; probe pass; session cookies kept between runs |
+| Capture | A person's session, a scripted session (`--script`), or the crawl. Chrome with its own profile; every HTTP exchange with bodies; WebSocket frames; clicks, typing, submits; page snapshots (HTML + accessibility tree); HAR as a second copy; probe pass; session cookies kept between runs |
 | Explore | Automatic crawl with no model. UI gate and network gate; a 60-action run on the test app changed nothing in it |
 | Scrub | Cookies, tokens, passwords become placeholders. `--pii`: labelled fields and patterns replaced by consistent fakes |
 | Analyze | Endpoint clusters with `{id}` path templates, six classes, volatile fields, value flow, held-out split, a small OpenAPI file, endpoints named in JS but never seen |

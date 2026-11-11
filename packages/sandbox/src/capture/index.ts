@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type BrowserContext, type Page, chromium } from "playwright";
 import YAML from "yaml";
@@ -192,6 +192,12 @@ export async function capture(paths: AppPaths, config: AppConfig, opts: CaptureO
       const last = context.pages().find((p) => !p.isClosed());
       if (last) await recorder.snapshot(last, "end");
     }
+  } catch (e) {
+    // A session that failed part-way is not a capture: leave nothing half-written behind.
+    await recorder.stop().catch(() => {});
+    if (!closedByUser) await context.close().catch(() => {});
+    rmSync(dir, { recursive: true, force: true });
+    throw e;
   } finally {
     await recorder.stop().catch(() => {});
     if (!closedByUser) await context.close().catch(() => {});
