@@ -10,14 +10,18 @@
     "test": "vitest run",
     "typecheck": "pnpm -r exec tsc --noEmit -p tsconfig.json",
     "lint": "biome check .",
-    "sandbox": "node packages/sandbox/dist/cli.js"
+    "sandbox": "node packages/sandbox/dist/cli.js",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
     "typescript": "^5.7.2",
+    "vitepress": "^1.6.4",
     "vitest": "^2.1.8",
-    "ws": "^8.18.0",
-    "@types/ws": "^8.5.13"
+    "ws": "^8.18.0"
   }
 }

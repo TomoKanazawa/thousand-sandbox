@@ -103,6 +103,18 @@ node fixtures/tiny-clinic/server.mjs      # the test app, http://127.0.0.1:4010
 Requires Node 22.13+, pnpm 9 and Google Chrome. The builder needs `@anthropic-ai/claude-agent-sdk` and
 `ANTHROPIC_API_KEY`.
 
+### The documentation site
+
+The files in `docs/` are also built into a website with [VitePress](https://vitepress.dev):
+
+```bash
+pnpm docs:dev        # preview at http://localhost:5173, reloads as you edit
+pnpm docs:build      # writes the site to docs/.vitepress/dist
+```
+
+`AGENTS.md` stays at the repository root and is copied into the site on each build. To host the site anywhere
+that serves static files, use the build command `pnpm docs:build` and the output folder `docs/.vitepress/dist`.
+
 ## Rules for this repo
 
 - Never commit captures, HAR files, certificates or keys (`.sandbox/` is git-ignored).

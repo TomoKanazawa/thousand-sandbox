@@ -9,3 +9,6 @@ dist/
 *.pem
 .DS_Store
 private/
+docs/.vitepress/cache/
+docs/agents.md
+docs/public/LICENSE.txt
