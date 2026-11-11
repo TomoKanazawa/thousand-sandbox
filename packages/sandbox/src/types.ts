@@ -95,6 +95,8 @@ export interface Manifest {
   phi?: boolean;
   reviewed?: boolean;
   label?: string;
+  /** The app's data had been put back to its starting state before this capture (a test system that was reset). */
+  afterReset?: boolean;
 }
 
 export interface AppConfig {

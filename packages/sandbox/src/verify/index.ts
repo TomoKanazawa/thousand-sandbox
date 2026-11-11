@@ -37,7 +37,8 @@ export interface VerifyResult {
  *   L1: the copy reproduces the exchanges the builder saw.
  *   L2: it answers a different instance of the same endpoint that the builder never saw.
  *   L3: after a recorded write, the recorded reads that followed still match (the state really changed).
- * Captures are replayed in the order they were recorded, as one timeline starting from seed.db.
+ * Captures are replayed in the order they were recorded, as one timeline starting from seed.db. A capture
+ * marked afterReset (the app's data was put back before it) starts again from the seed.
  */
 let runs = 0;
 
@@ -90,7 +91,12 @@ export async function verify(
 
   let checked = 0;
   let passed = 0;
+  let inCapture = "";
   for (const x of timeline) {
+    if (x.capture !== inCapture) {
+      if (inCapture && corpus.afterReset.has(x.capture)) replica.reset();
+      inCapture = x.capture;
+    }
     const entry = entries.get(x.cluster!)!;
     const headers: Record<string, string> = {};
     for (const [k, v] of x.reqHeaders)

@@ -48,7 +48,9 @@ unchanged; your code answers the requests that read or change data.
 
 - \`schema.sql\`: SQLite schema.
 - \`seed.sql\`: INSERT statements. The data as it was **at the start of the earliest capture**, before any
-  recorded write. The checker replays the recorded session in order from this state.
+  recorded write. The checker replays the recorded sessions in order from this state. A line
+  \`{"reset":true}\` in timeline.jsonl means the real app's data was put back at that point; the checker
+  returns to the seed there too.
 - \`MODEL.md\`: one line per endpoint: which tables it reads or writes.
 - \`routes/<cluster-id>.ts\`: one module per endpoint. Default-export \`{ cluster, kind, handle(ctx) }\`.
 - \`templates/*.ts\`: shared functions that build HTML or JSON. Import them with a relative path that ends

@@ -20,6 +20,8 @@ export interface CaptureOptions {
   probe?: boolean;
   screenshots?: boolean;
   label?: string;
+  /** The app's data was reset to its starting state before this session. The checker then starts it from the seed. */
+  afterReset?: boolean;
   startUrl?: string;
   /** Script mode: drive the page yourself. */
   script?: (page: Page, helpers: { recorder: Recorder; context: BrowserContext }) => Promise<void>;
@@ -127,6 +129,7 @@ export async function capture(paths: AppPaths, config: AppConfig, opts: CaptureO
     episodes: 1,
     scrub: "none",
     label: opts.label,
+    afterReset: opts.afterReset || undefined,
   };
   writeJson(join(dir, "manifest.json"), manifest);
 

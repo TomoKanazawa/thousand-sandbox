@@ -9,7 +9,7 @@ pseudonyms.json          real value -> replacement. Never leaves the machine
 session-cookies.json     session cookies of the capture profile. Treat like a password
 profile/                 Chrome profile used only by this tool
 captures/<id>/
-  manifest.json          when, how, scrub status
+  manifest.json          when, how, scrub status, and afterReset when the app's data had been put back first
   episodes/1.jsonl       one event per line: action, exchange, ws, snapshot, probe, console, dialog, popup, gate
   bodies/<sha256>        request and response bodies, stored once
   snapshots/             <id>.html and <id>.aria.txt per snapshot
@@ -44,6 +44,7 @@ run/                     the running copy's database and Chrome profile
 | write | Changes stored data | Handler, or the recording (nothing changes) |
 | session | Login, logout, keep-alive | The recorded success, whatever was typed |
 | noise | Analytics, telemetry | Empty `204` |
+| external | An address outside the origins in scope | `502` |
 | uncaptured | Never observed | `501`, header `X-Sandbox: uncaptured` |
 
 ## Ledger labels

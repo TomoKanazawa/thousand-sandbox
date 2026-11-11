@@ -251,7 +251,20 @@ export class Replica {
       cluster: res.cluster,
     };
     if (res.served === "error") entry.error = res.body.toString("utf8").slice(0, 300);
-    this.log.push(entry);
+    // The browser's own background requests (updates, sign-in, autofill) are not the app's or the agent's:
+    // they come from no page. Refuse them like any other outside address, but keep them out of the log.
+    const fromAppPage = [req.headers.referer, req.headers.origin].some((h) => {
+      try {
+        return !!h && this.config.origins.includes(new URL(h).origin);
+      } catch {
+        return false;
+      }
+    });
+    const fromNoPage =
+      !fromAppPage &&
+      (req.headers["sec-fetch-site"] ?? "none") === "none" &&
+      req.headers["sec-fetch-mode"] !== "navigate";
+    if (!(res.served === "external" && fromNoPage)) this.log.push({ ...entry, n: this.log.length + 1 });
     return res;
   }
 
@@ -282,6 +295,9 @@ export class Replica {
           body: Buffer.from("sandbox: request to a host outside the copy"),
           served: "external",
         };
+      // Browsers ask for /favicon.ico by themselves. An app that has none is not missing a recording.
+      if (method === "GET" && new URL(req.url).pathname === "/favicon.ico")
+        return { status: 404, headers: [["content-type", "text/plain"]], body: empty, served: "noise" };
       return uncaptured(`no recording of ${method} ${new URL(req.url).pathname}`);
     }
 

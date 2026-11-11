@@ -82,6 +82,7 @@ withApp(program.command("capture").description("Record the live app"))
   .option("--headless", "no visible window (not for --human)")
   .option("--screenshots", "also save a screenshot with each snapshot")
   .option("--label <text>", "a note stored with the capture")
+  .option("--after-reset", "the app's data was put back to its starting state before this session (test systems)")
   .action(async (o) => {
     const { paths, config } = ctx(o);
     if (o.script && o.explore) throw new Error("Use --script or --explore, not both.");
@@ -100,6 +101,7 @@ withApp(program.command("capture").description("Record the live app"))
       headless: !!o.headless,
       screenshots: !!o.screenshots,
       label: o.label,
+      afterReset: !!o.afterReset,
     });
     const a = analyze(paths, config);
     out(`Capture ${id} saved. ${a.coverage.exchanges} exchanges in ${a.coverage.clusters} endpoints so far.`);

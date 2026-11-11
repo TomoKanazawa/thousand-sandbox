@@ -62,14 +62,24 @@ export interface Corpus {
   actions: (ActionEvent & { capture: string })[];
   snapshots: (SnapshotEvent & { capture: string; dir: string })[];
   byId: Map<string, Ex>;
+  /** Captures recorded after the app's data was reset: replaying them starts again from the seed. */
+  afterReset: Set<string>;
 }
 
 /** Read every scrubbed capture of the app. */
 export function loadCorpus(paths: AppPaths, config: AppConfig, only?: string[]): Corpus {
-  const corpus: Corpus = { exchanges: [], probes: [], actions: [], snapshots: [], byId: new Map() };
+  const corpus: Corpus = {
+    exchanges: [],
+    probes: [],
+    actions: [],
+    snapshots: [],
+    byId: new Map(),
+    afterReset: new Set(),
+  };
   for (const id of only ?? listCaptures(paths)) {
     const b = loadBundle(paths, id, true);
     if (b.manifest.mode === "drift" && !only) continue;
+    if (b.manifest.afterReset) corpus.afterReset.add(id);
     for (const e of b.events) {
       if (e.type === "exchange") {
         if (e.blocked || e.status === 0) continue;

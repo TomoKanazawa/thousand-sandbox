@@ -80,6 +80,7 @@ export async function up(paths: AppPaths, config: AppConfig, opts: UpOptions = {
   });
   await proxy.forAnyWebSocket().thenRejectConnection(501, "sandbox: WebSocket replay is not built yet");
 
+  let ready = false;
   const control = http.createServer((req, res) => {
     const send = (status: number, value: unknown) => {
       res.writeHead(status, { "content-type": "application/json", "access-control-allow-origin": "*" });
@@ -94,7 +95,8 @@ export async function up(paths: AppPaths, config: AppConfig, opts: UpOptions = {
     if (path === "/log") return send(200, replica.log);
     if (path === "/ledger")
       return send(200, replica.ledger() ?? { error: "no ledger yet; run `sandbox build` or `sandbox verify`" });
-    if (path === "/health") return send(200, { ok: true, app: config.app, clusters: replica.clusters.length });
+    // ok turns true only once the proxy and (when launched) Chrome are ready, so a script can wait on it.
+    if (path === "/health") return send(200, { ok: ready, app: config.app, endpoints: replica.clusters.length });
     send(404, {
       error: "unknown control endpoint",
       endpoints: ["POST /reset", "GET /state", "GET /log", "GET /ledger", "GET /health"],
@@ -110,6 +112,13 @@ export async function up(paths: AppPaths, config: AppConfig, opts: UpOptions = {
     "--disable-quic",
     "--no-first-run",
     "--no-default-browser-check",
+    // Keep Chrome's own background requests (updates, sign-in, safe browsing) out of the copy's log.
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-sync",
+    "--disable-default-apps",
+    "--no-pings",
+    "--disable-features=OptimizationHints,MediaRouter,Translate,AutofillServerCommunication",
   ];
 
   let chrome: ChildProcess | undefined;
@@ -144,6 +153,7 @@ export async function up(paths: AppPaths, config: AppConfig, opts: UpOptions = {
       await new Promise((r) => setTimeout(r, 150));
     }
   }
+  ready = true;
 
   writeFileSync(
     join(ensureDir(paths.run), "up.json"),

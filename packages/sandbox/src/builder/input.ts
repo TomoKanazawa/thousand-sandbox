@@ -45,7 +45,13 @@ export function prepareInput(paths: AppPaths, config: AppConfig): { dir: string;
   const ordered = [...corpus.exchanges].sort((a, b) =>
     a.capture === b.capture ? a.ts - b.ts : a.capture.localeCompare(b.capture),
   );
+  let inCapture = "";
   for (const x of ordered) {
+    if (x.capture !== inCapture) {
+      if (inCapture && corpus.afterReset.has(x.capture))
+        timeline.push(JSON.stringify({ reset: true, note: "the app's data was put back to the seed state here" }));
+      inCapture = x.capture;
+    }
     const cls = classOf.get(x.cluster ?? "");
     if (!x.cluster || cls === "static" || cls === "noise" || !cls) continue;
     if ((cls === "read" || cls === "write") && !visible.has(x.id)) continue;

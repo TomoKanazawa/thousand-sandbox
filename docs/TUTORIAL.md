@@ -5,7 +5,7 @@ no account, no outside website and no person at the keyboard. Only step 9 uses a
 $1); you can skip it.
 
 Every command below was run as written, and the output shown is what it printed. Paths, dates and capture ids
-will differ on your machine.
+will differ on your machine, and the counts of exchanges and checks can differ by a few from run to run.
 
 **What you will have at the end:** a working copy of the test app that keeps running after the real app is
 switched off, a browser that any agent can attach to, and a report of which actions in the copy are proven.
@@ -49,7 +49,7 @@ ok   Disk 238 GB free
 ok   Docker (optional)
 ```
 
-A `FAIL` on `ANTHROPIC_API_KEY` is fine until step 9. If Chrome is missing, install it or run
+A `FAIL` on `ANTHROPIC_API_KEY` is fine until step 9 (it shows `ok` if a key is already set on your machine). If Chrome is missing, install it or run
 `pnpm --filter thousand-sandbox exec playwright install chromium`.
 
 ## 1. Start the test app
@@ -135,7 +135,8 @@ unknown  default    POST 127.0.0.1:4010 /login
 unknown  default    POST 127.0.0.1:4010 /patients/{id}/edit
 ```
 
-This is the list of requests that might change data, with the tool's decision for each. It decides what the
+(It also prints the path of the file that holds these decisions.) This is the list of requests that might change
+data, with the tool's decision for each. It decides what the
 automatic crawl in step 7 is allowed to send: `read` passes, `write` and `unknown` are blocked.
 
 ## 5. Run the copy, with the real app switched off
@@ -160,7 +161,8 @@ Press Ctrl-C to stop.
 The tool started a Chrome that sends every request for the app to the copy. The app's address has not changed.
 Leave out `--headless` to see the window.
 
-Check that it is up:
+Starting takes a few seconds. The copy is ready when this shows `"ok": true`; a script should repeat it until
+it does:
 
 ```bash
 curl -s http://127.0.0.1:8878/health
@@ -170,7 +172,7 @@ curl -s http://127.0.0.1:8878/health
 {
   "ok": true,
   "app": "127.0.0.1_4010",
-  "clusters": 15
+  "endpoints": 15
 }
 ```
 
@@ -207,8 +209,9 @@ See what your agent did:
 curl -s http://127.0.0.1:8878/log
 ```
 
-Each entry has the method, the URL, the status and `served`: `static`, `replay`, `generated`, `stub`, `noise`
-or `uncaptured`. Stop the copy when you are done:
+Each entry has the method, the URL, the status and `served`: `static`, `replay`, `generated`, `stub`, `noise`,
+`uncaptured`, or `external` (an address outside the app, refused with `502`). The entry for `/patients/999` is
+the `uncaptured` one. Stop the copy when you are done:
 
 ```bash
 $SB down
@@ -223,16 +226,22 @@ change nothing. Steps 8 and 9 make it keep state.
 
 ## 7. Let the tool explore by itself, safely
 
-Start the test app again (step 1). Because it was restarted, log in again by re-running the session from step 3:
+Start the test app again (step 1) and leave it running for the rest of the tutorial. The restart did two things:
+it logged the tool out, and it put the app's data back to where it started. So run the session from step 3
+again, and tell the tool about the second point with `--after-reset`:
 
 ```bash
-$SB capture --script $REPO/fixtures/tiny-clinic/session.mjs --headless
+$SB capture --script $REPO/fixtures/tiny-clinic/session.mjs --headless --after-reset
 ```
 
-The test app has three switches for testing the tool. Put its data back, and take a fingerprint of it:
+Without `--after-reset` the tool assumes each recording continues from where the last one ended, as it does on
+a real system, and the check in step 8 would fail.
+
+The test app has three addresses for testing the tool: `/__test/state` shows its real data, `/__test/reset`
+puts the data back, and `/__test/variant/v2` releases a changed version (used in step 10). Take a fingerprint of
+the data:
 
 ```bash
-curl -s -X POST http://127.0.0.1:4010/__test/reset > /dev/null
 curl -s http://127.0.0.1:4010/__test/state | shasum
 ```
 
@@ -245,7 +254,8 @@ $SB capture --explore --headless --max-actions 25
 ```
 Explored 7 states with 24 actions; refused 7 controls.
 Probe pass: 26 of 26 safe GETs repeated.
-Capture 20261111-200916 saved. 561 exchanges in 15 endpoints so far.
+Capture 20261111-202147 saved. 280 exchanges in 15 endpoints so far.
+Next: sandbox up (replay as recorded), or sandbox build (make it stateful).
 ```
 
 **Refused 7 controls** are buttons it would not press, such as "Save changes", "Delete" and "Sign and send
@@ -270,13 +280,14 @@ $SB verify
 ```
 
 ```
-20/20 checks pass. Endpoints: 7 verified, 7 replayed-only, 0 inferred, 0 uncaptured, 1 external
+95/95 checks pass. Endpoints: 7 verified, 7 replayed-only, 0 inferred, 0 uncaptured, 1 external
 ```
 
-`verify` replays the recorded session against the copy and compares every answer. No model is involved. The
-counts depend on how many captures you have made, so yours may be higher.
+`verify` replays the recorded sessions against the copy and compares every answer. No model is involved. It
+exits with code 0 when every check passes. The number of checks depends on how many captures you have made.
 
-Run it and write something. Start the copy (`$SB up --headless`, second terminal), then run the second
+Run it and write something. The test app can stay running; the copy's Chrome never reaches it. Start the copy
+(`$SB up --headless`, second terminal), wait for `/health` as in step 5, then run the second
 example, which adds a note to a patient through the browser:
 
 ```bash

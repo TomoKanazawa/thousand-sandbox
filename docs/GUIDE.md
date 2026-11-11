@@ -116,8 +116,8 @@ sandbox init https://app.example.com --origin https://api.example.com https://cd
 or later, by editing `origins:` in `.sandbox/<app>/sandbox.config.yaml` and running `sandbox analyze`. An origin
 is the scheme, host and port: `https://api.example.com`, with no path.
 
-To find out which ones you need, run the copy (section 6), use the app, and look for `502` entries in the
-request log.
+To find out which ones you need, run the copy (section 6), use the app, and look for entries marked `external`
+in the request log.
 
 ### Several apps
 
@@ -191,6 +191,20 @@ person's or a script's session first, so the login is valid and the policy has s
 
 `--allow-writes` removes the second protection. Use it only on a system you own that can be reset.
 
+### Test systems that get reset
+
+The tool assumes each capture continues from where the previous one ended, which is how a real system behaves:
+the note you added yesterday is still there today. If you record on a test system whose data was put back to
+its starting state since the last capture (it was restarted, restored or re-seeded), say so:
+
+```bash
+sandbox capture --after-reset
+```
+
+It works with every way of recording. The check in section 8 then starts that capture from the copy's starting
+data instead of carrying on. Without it, `sandbox verify` reports failures such as a new record getting a
+different id than the one recorded.
+
 ### Reads that look like writes
 
 Some apps send a search or a filter as a `POST`. The tool blocks those while exploring, because it cannot tell
@@ -214,6 +228,10 @@ Endpoints: 15  (static 2, read 8, write 3, session 1, noise 1)
 Exchanges: 55; kept back for checking: 10; read-after-write checks: 3
 Named in the app's code but never seen (3): /notes, /sign, /ws
 ```
+
+An **exchange** is one request with its response. An **endpoint** is a group of requests of the same kind, such
+as every `GET /orders/{id}`; each has an id like `c_0007`, shown in `sandbox report`. (The files call an endpoint
+a cluster.)
 
 | Kind | Meaning | In the copy |
 |---|---|---|
@@ -240,7 +258,8 @@ The copy of app.example.com is running.
 Press Ctrl-C to stop.
 ```
 
-The command keeps running. It starts three things:
+The command keeps running, and takes a few seconds to be ready. A script should wait until
+`GET http://127.0.0.1:8878/health` returns `"ok": true` before attaching. It starts three things:
 
 - **The copy**, behind a local proxy on port 8877.
 - **A Chrome window** that sends every request to that proxy. Inside this Chrome, the app's real address shows
@@ -292,10 +311,10 @@ browser accept the copy's certificate for HTTPS addresses; nothing is installed 
 
 | Request | What it does |
 |---|---|
-| `GET /health` | `{ "ok": true, "app": ..., "clusters": ... }` |
+| `GET /health` | `{ "ok": true, "app": ..., "endpoints": ... }`. `ok` is `false` while the copy is still starting |
 | `POST /reset` | Puts the copy's data back to the start. Same as `sandbox reset` |
 | `GET /state` | The copy's database as JSON, one key per table. Use it in test assertions |
-| `GET /log` | Every request made to the copy, in order |
+| `GET /log` | Every request the app's pages and your agent made, in order |
 | `GET /ledger` | The trust labels (section 8) |
 
 Each `/log` entry has `method`, `url`, `status` and `served`:
@@ -306,11 +325,14 @@ Each `/log` entry has `method`, `url`, `status` and `served`:
 | `replay` | A recording, repeated |
 | `generated` | A handler answered from the database |
 | `stub` | Login and similar: the recorded success |
-| `noise` | Analytics, answered with nothing |
+| `noise` | Analytics, answered with nothing. Also the browser's own request for `/favicon.ico` when the app has none |
 | `uncaptured` | Nothing recorded for this request. Status `501` |
+| `external` | An address that is not in scope (section 4). Status `502` |
 
-After an agent run, filter the log for `uncaptured`. Those are the places where your agent went beyond what the
-copy knows, and what to record next.
+After an agent run, filter the log for `uncaptured` and `external`. The first are the places where your agent
+went beyond what the copy knows, and what to record next. The second are addresses the app needs that the copy
+does not answer for yet. Chrome's own background requests (updates, sign-in checks) are refused and left out of
+the log.
 
 ### Options
 
@@ -388,7 +410,14 @@ sandbox verify
 `verify` replays every recorded session against the copy, in order, from the starting data, and compares each
 answer with what the real app sent. It uses no model. Parts of a response that change by themselves
 (timestamps, tokens, request ids) are ignored. It exits with code 1 when a check fails, and prints each failure
-with the first difference. On a replay copy it has nothing to check and prints `0/0 checks pass`.
+with the first difference:
+
+```
+FAIL c_0001 DELETE app.example.com /api/notes/{id} [l1] 20261111-201725:x74: status: expected 204, got 404
+```
+
+That line reads: endpoint id, endpoint, level of the check (below), capture id and exchange id, then what was
+expected and what the copy answered. On a replay copy it has nothing to check and prints `0/0 checks pass`.
 
 There are three levels of check:
 
@@ -473,7 +502,7 @@ Every command accepts `--app <name>`, needed only when `.sandbox/` holds more th
 | `sandbox doctor` | Checks the machine | |
 | `sandbox init <url>` | Creates `.sandbox/<app>/` and opens Chrome for a login. `--no-login`, `--origin <origin...>` | A person, unless `--no-login` |
 | `sandbox login` | Opens Chrome with the saved profile to log in again | A person |
-| `sandbox capture` | Records a person's session until the window is closed. `--screenshots`, `--label <text>` | A person |
+| `sandbox capture` | Records a person's session until the window is closed. `--screenshots`, `--label <text>`, `--after-reset` | A person |
 | `sandbox capture --script <file>` | Records a scripted session. `--headless` | |
 | `sandbox capture --explore` | Records an automatic read-only crawl. `--max-actions <n>` (default 300), `--headless`, `--allow-writes` | A valid login |
 | `sandbox policy` | Lists read/write decisions. `--set "<key>=<read\|write\|unknown>"` | |
@@ -513,7 +542,7 @@ To start an app again from nothing, delete `.sandbox/<app>/`. To remove one reco
 
 | What you see | Why | What to do |
 |---|---|---|
-| A page in the copy is blank or half-loaded | A script or data file comes from an address that is not in scope | Look for `502` in `GET /log`, add those origins (section 4), run `sandbox analyze`, restart the copy |
+| A page in the copy is blank or half-loaded | A script or data file comes from an address that is not in scope | Look for `external` entries in `GET /log`, add those origins (section 4), run `sandbox analyze`, restart the copy |
 | `501` with `X-Sandbox: uncaptured` | That request was never recorded with those parameters | Record a session that makes it, then restart the copy |
 | The copy shows a record but not the one your agent asked for | Replay copies only know recorded records | Record that record, or build the stateful copy |
 | A write "works" but nothing changes | It is a replay copy, or that endpoint is replayed-only | Build the stateful copy; record a read after the write |
@@ -526,11 +555,12 @@ To start an app again from nothing, delete `.sandbox/<app>/`. To remove one reco
 | An "address already in use" error from `sandbox up` | A copy is already running, or the port is taken | `sandbox down`, or choose other ports |
 | Chrome does not open | Chrome is not installed where the tool looks | Install Chrome, or `pnpm --filter thousand-sandbox exec playwright install chromium` |
 | Live updates do not arrive in the copy | WebSockets are recorded but not replayed | Nothing yet; see Limits |
+| `verify` fails with different ids or stale values, on a test system | The system's data was reset between captures | Record with `--after-reset` (section 5). To fix an existing capture, delete its folder under `captures/` and record again |
 | `verify` reports failures after you edited a handler | The handler's answer differs from the recording | Read the printed difference; it shows the first place they diverge |
 | `sandbox verify` prints `0/0 checks pass` | There is no stateful copy yet | Normal for a replay copy |
 
 When something else goes wrong, the most useful things to send with a report are the command, its full output,
-`sandbox report`, and the `uncaptured` and `502` lines from `GET /log`. Do not send the `captures/` folder: it
+`sandbox report`, and the `uncaptured` and `external` lines from `GET /log`. Do not send the `captures/` folder: it
 holds the unscrubbed recording.
 
 ## 14. Limits

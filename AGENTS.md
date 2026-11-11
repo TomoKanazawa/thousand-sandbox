@@ -56,6 +56,8 @@ cd /path/to/workdir && /path/to/thousand-sandbox/bin/sandbox analyze
 - **Do not make changes in a real app** unless you were told which test record to use. `capture --explore` is
   read-only by design; `--allow-writes` and scripted sessions are not.
 - **Do not add `--allow-writes` on a system that cannot be reset.**
+- **On a test system that was reset since the last capture, record with `--after-reset`**, or `sandbox verify`
+  will fail for a reason that is not a fault in the copy.
 - **Do not commit or upload anything under `.sandbox/`.** It holds the unscrubbed recording, a browser profile
   with a live login, and session cookies.
 - **Do not add anything to this repository that defeats bot detection**, and do not add recordings of other
@@ -68,9 +70,9 @@ Do not judge by whether a command exited without an error. Check the result:
 | Step | Evidence that it worked |
 |---|---|
 | Capture | The summary line shows more than a handful of exchanges, and `sandbox analyze` lists `read` endpoints. One state and zero actions from `--explore` means it was looking at a login page |
-| Copy running | `curl -s http://127.0.0.1:8878/health` returns `"ok": true` |
+| Copy running | `curl -s http://127.0.0.1:8878/health` returns `"ok": true`. It is `false` for the first few seconds; repeat until it is true before attaching |
 | Copy is really the copy | Stop or disconnect the real app if you can, then load a recorded page through the attached Chrome. Or check that the request appears in `GET /log` |
-| Agent run | `GET /log` has no `uncaptured` or `502` entries for the pages the agent needed |
+| Agent run | `GET /log` has no entries with `served` equal to `uncaptured` or `external` for what the agent needed |
 | A write was kept | The row is in `GET /state`, and it is gone again after `sandbox reset` |
 | Stateful copy is right | `sandbox verify` exits 0 and prints `n/n checks pass` with n above zero |
 | Exploring changed nothing | Compare the real app's data before and after, if the app lets you read it |
@@ -87,7 +89,7 @@ When you were asked to test the tool, report in this shape, in plain language:
 1. **What you ran:** the app, the commands, and which of them were scripted, explored or done by a person.
 2. **What worked**, with the evidence from the table above (the actual lines, not a summary of them).
 3. **What failed:** the exact command, its full output, and what you expected. Include the `uncaptured` and
-   `502` lines from `GET /log` and the output of `sandbox report`.
+   `external` lines from `GET /log` and the output of `sandbox report`.
 4. **What you could not test and why** (needed a person, needed a key, not built yet according to STATUS.md).
 5. **Where the documents were wrong or unclear.** Quote the sentence. A step that did not behave as written is
    a finding even if you worked around it.
@@ -100,7 +102,7 @@ Never include the contents of `.sandbox/<app>/captures/`, cookies or keys in a r
 ```bash
 pnpm install
 pnpm --filter thousand-sandbox exec playwright install chromium
-pnpm build && pnpm test      # 19 tests, about a minute
+pnpm build && pnpm test      # 21 tests, about a minute
 pnpm lint
 ```
 
