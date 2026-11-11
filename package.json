@@ -1,0 +1,23 @@
+{
+  "name": "thousand-sandbox-workspace",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "typecheck": "pnpm -r exec tsc --noEmit -p tsconfig.json",
+    "lint": "biome check .",
+    "sandbox": "node packages/sandbox/dist/cli.js"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "ws": "^8.18.0",
+    "@types/ws": "^8.5.13"
+  }
+}

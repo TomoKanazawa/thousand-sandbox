@@ -1,0 +1,23 @@
+{
+  "name": "thousand-sandbox",
+  "version": "0.1.0",
+  "description": "An exact working copy of any web app, as a sandbox for testing AI agents.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": { "sandbox": "dist/cli.js" },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "contract"],
+  "engines": { "node": ">=22.13" },
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": {
+    "@faker-js/faker": "^9.3.0",
+    "commander": "^12.1.0",
+    "mockttp": "^4.6.5",
+    "node-html-parser": "^7.0.1",
+    "playwright": "^1.65.0",
+    "yaml": "^2.6.1"
+  },
+  "peerDependencies": { "@anthropic-ai/claude-agent-sdk": ">=0.3.0" },
+  "peerDependenciesMeta": { "@anthropic-ai/claude-agent-sdk": { "optional": true } }
+}
